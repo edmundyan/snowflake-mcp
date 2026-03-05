@@ -5,7 +5,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from mcp_server_snowflake.query_manager.prompts import query_tool_prompt
-from mcp_server_snowflake.utils import SnowflakeException
+from mcp_server_snowflake.utils import SnowflakeException, results_to_tsv
 
 
 def run_query(statement: str, snowflake_service):
@@ -24,8 +24,8 @@ def run_query(statement: str, snowflake_service):
 
     Returns
     -------
-    list[dict]
-        List of dictionaries containing query results with column names as keys
+    list[dict] | str
+        Query results as a list of dicts (json mode) or a TSV string (tsv mode)
 
     Raises
     ------
@@ -41,7 +41,10 @@ def run_query(statement: str, snowflake_service):
             cur,
         ):
             cur.execute(statement)
-            return cur.fetchall()
+            results = cur.fetchall()
+            if snowflake_service.result_format == "tsv" and results:
+                return results_to_tsv(results)
+            return results
     except Exception as e:
         raise SnowflakeException(
             tool="query_manager",
