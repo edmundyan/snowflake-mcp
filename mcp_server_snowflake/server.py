@@ -107,7 +107,7 @@ class SnowflakeService:
         transport: str,
         connection_params: dict,
         endpoint: str = "/mcp",
-        result_format: str = "json",
+        result_format: str = "tsv",
     ):
         if service_config_file is None:
             raise ValueError(
@@ -514,8 +514,8 @@ def parse_arguments():
         "--result-format",
         required=False,
         choices=["json", "tsv"],
-        default=os.getenv("SNOWFLAKE_MCP_RESULT_FORMAT", "json"),
-        help="Format for query result sets: json (default) or tsv",
+        default=os.getenv("SNOWFLAKE_MCP_RESULT_FORMAT", "tsv"),
+        help="Format for query result sets: tsv (default) or json",
     )
 
     return parser.parse_args()

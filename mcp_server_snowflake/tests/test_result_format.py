@@ -99,7 +99,7 @@ def test_snowflake_service_default_result_format(
         transport="stdio",
         connection_params={},
     )
-    assert service.result_format == "json"
+    assert service.result_format == "tsv"
 
 
 def test_snowflake_service_tsv_result_format(
@@ -121,7 +121,7 @@ def test_parse_arguments_default_result_format(monkeypatch):
     monkeypatch.delenv("SNOWFLAKE_MCP_RESULT_FORMAT", raising=False)
     with patch("sys.argv", ["prog"]):
         args = parse_arguments()
-    assert args.result_format == "json"
+    assert args.result_format == "tsv"
 
 
 def test_parse_arguments_tsv_result_format():
