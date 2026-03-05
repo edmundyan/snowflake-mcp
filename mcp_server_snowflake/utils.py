@@ -55,6 +55,23 @@ def warn_deprecated_params() -> None:
         logger.info(f"Deprecated parameters: {', '.join(deprecated_found)}")
 
 
+def results_to_tsv(data: list[dict]) -> str:
+    """Convert a non-empty list of row dicts to a TSV string with a header row.
+
+    Tabs and newlines within values are escaped as \\t and \\n so they cannot
+    break the row/column structure.
+    """
+    def escape(value) -> str:
+        s = "" if value is None else str(value)
+        return s.replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r")
+
+    headers = list(data[0].keys())
+    lines = ["\t".join(headers)]
+    for row in data:
+        lines.append("\t".join(escape(row[h]) for h in headers))
+    return "\n".join(lines) + "\n"
+
+
 def execute_query(statement: str, snowflake_service, bindvars: list[str] = []):
     """Execute a Snowflake query and return the results using Python connector dictionary cursor."""
     with snowflake_service.get_connection(
@@ -65,7 +82,10 @@ def execute_query(statement: str, snowflake_service, bindvars: list[str] = []):
         cur,
     ):
         cur.execute(statement, bindvars)
-        return cur.fetchall()
+        results = cur.fetchall()
+        if snowflake_service.result_format == "tsv" and results:
+            return results_to_tsv(results)
+        return results
 
 
 def sanitize_tool_name(service_name: str) -> str:
@@ -105,13 +125,13 @@ class AnalystResponse(BaseModel):
         Natural language response text from the analyst
     sql : str, optional
         Generated SQL query, by default None
-    results : dict | list, optional
+    results : dict | list | str, optional
         Query execution results if SQL was executed, by default None
     """
 
     text: str
     sql: Optional[str] = None
-    results: Optional[Union[dict, list]] = None
+    results: Optional[Union[dict, list, str]] = None
 
 
 class AgentResponse(BaseModel):
@@ -214,7 +234,10 @@ class SnowflakeResponse:
             cur,
         ):
             cur.execute(statement)
-            return cur.fetchall()
+            results = cur.fetchall()
+            if service.result_format == "tsv" and results:
+                return results_to_tsv(results)
+            return results
 
     def parse_analyst_response(
         self, response: requests.Response | dict, service, **kwargs
